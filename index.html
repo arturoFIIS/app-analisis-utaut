@@ -1,524 +1,655 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Análisis Estadístico UTAUT</title>
-    
-    <!-- Tailwind CSS para estilos -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Chart.js para los gráficos -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
-    <!-- Iconos Lucide -->
-    <script src="https://unpkg.com/lucide@latest"></script>
-
-    <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8fafc; }
-        .chart-container { position: relative; height: 300px; width: 100%; }
-    </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1.0" />
+<title>Análisis Estadístico UTAUT</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+    body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#f8fafc}
+    .chart-container{position:relative;height:300px;width:100%}
+    #errorMessage span{white-space:pre-line}
+</style>
 </head>
 <body class="text-slate-800">
+<div class="min-h-screen p-6">
+    <header class="mb-8 text-center">
+        <h1 class="text-3xl font-bold mb-2">Análisis Estadístico UTAUT</h1>
+        <p class="text-slate-500">Desarrollado por Arturo Benites</p>
+    </header>
 
-    <div class="min-h-screen p-6">
-        <header class="mb-8 text-center">
-            <h1 class="text-3xl font-bold text-slate-800 mb-2">Análisis Estadístico UTAUT</h1>
-            <p class="text-slate-500">Desarrollado por Arturo Benites</p>
-        </header>
-
-        <!-- SECCIÓN 1: CARGA DE ARCHIVO -->
-        <div id="upload-section" class="max-w-xl mx-auto bg-white p-8 rounded-xl shadow-lg border border-dashed border-slate-300 text-center transition-all duration-300">
-            <div class="mb-4 flex justify-center text-blue-500">
-                <i data-lucide="upload" width="48" height="48"></i>
-            </div>
-            <h2 class="text-xl font-semibold mb-2">Sube tu archivo de datos</h2>
-            <p class="text-sm text-gray-500 mb-6">Soporta formato .CSV (EF01-04, EE01-04, CF01-04, IS01-03).</p>
-            
-            <input type="file" id="fileInput" accept=".csv" class="block w-full text-sm text-slate-500
-              file:mr-4 file:py-2 file:px-4
-              file:rounded-full file:border-0
-              file:text-sm file:font-semibold
-              file:bg-blue-50 file:text-blue-700
-              hover:file:bg-blue-100 cursor-pointer"
-            />
-            <div id="errorMessage" class="hidden mt-4 p-3 bg-red-50 text-red-700 rounded-lg text-sm text-left flex items-center gap-2">
-                <i data-lucide="alert-circle" width="16"></i> <span id="errorText"></span>
-            </div>
+    <!-- Carga -->
+    <div id="upload-section" class="max-w-xl mx-auto bg-white p-8 rounded-xl shadow-lg border border-dashed border-slate-300 text-center">
+        <div class="mb-4 flex justify-center text-blue-500">
+            <i data-lucide="upload" width="48" height="48"></i>
         </div>
-
-        <!-- SECCIÓN 2: DASHBOARD (Oculto al inicio) -->
-        <div id="dashboard-section" class="hidden space-y-8 max-w-7xl mx-auto mt-8">
-            
-            <!-- Barra de Estado -->
-            <div class="bg-white p-4 rounded-lg shadow-sm border border-slate-200 flex flex-wrap justify-between items-center">
-                <div class="flex items-center gap-2 text-green-600">
-                    <i data-lucide="check-circle" width="20"></i>
-                    <span class="font-semibold">Datos procesados correctamente</span>
-                </div>
-                <div class="flex gap-4 text-sm text-slate-600">
-                    <span>Registros: <strong id="totalRecords">0</strong></span>
-                    <span>Alfa Total: <strong id="totalAlpha">0.000</strong></span>
-                </div>
-                <button onclick="resetApp()" class="px-4 py-1 text-sm bg-slate-100 hover:bg-slate-200 rounded transition">
-                    Cargar nuevo archivo
-                </button>
-            </div>
-
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                
-                <!-- 1. Tabla Descriptiva -->
-                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-                    <div class="flex items-center gap-2 mb-4">
-                        <i data-lucide="file-text" class="text-blue-600"></i>
-                        <h2 class="text-lg font-bold text-slate-800">1. Estadísticos Descriptivos</h2>
-                    </div>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-sm text-left text-slate-600">
-                            <thead class="bg-slate-50 text-slate-800 font-semibold border-b">
-                                <tr>
-                                    <th class="px-4 py-2">Constructo</th>
-                                    <th class="px-4 py-2">Media</th>
-                                    <th class="px-4 py-2">Mediana</th>
-                                    <th class="px-4 py-2">Min</th>
-                                    <th class="px-4 py-2">Max</th>
-                                    <th class="px-4 py-2">Q1</th>
-                                    <th class="px-4 py-2">Q3</th>
-                                </tr>
-                            </thead>
-                            <tbody id="statsTableBody" class="divide-y">
-                                <!-- Filas generadas por JS -->
-                            </tbody>
-                        </table>
-                    </div>
-                    <div class="mt-6 bg-blue-50 p-4 rounded-lg">
-                        <h3 class="font-semibold text-blue-900 mb-2">Fiabilidad (Alfa de Cronbach)</h3>
-                        <div id="alphaContainer" class="grid grid-cols-4 gap-4 text-center">
-                            <!-- Alfas generados por JS -->
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 2. Boxplots -->
-                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-                    <div class="flex items-center gap-2 mb-4">
-                        <i data-lucide="bar-chart-2" class="text-blue-600"></i>
-                        <h2 class="text-lg font-bold text-slate-800">2. Diagrama de Cajas (Boxplot)</h2>
-                    </div>
-                    <p class="text-xs text-slate-500 mb-6">Punto rojo = Media. Línea gruesa = Mediana. Caja azul = Rango Intercuartil (Q1-Q3).</p>
-                    <div id="boxplotContainer" class="grid grid-cols-2 md:grid-cols-4 gap-6">
-                        <!-- SVGs generados por JS -->
-                    </div>
-                </div>
-
-                <!-- 3. Histograma Global -->
-                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 lg:col-span-2">
-                    <div class="flex items-center gap-2 mb-4">
-                        <i data-lucide="activity" class="text-blue-600"></i>
-                        <h2 class="text-lg font-bold text-slate-800">3. Pruebas de Normalidad Global (Campana de Gauss)</h2>
-                    </div>
-                    <div class="chart-container">
-                        <canvas id="globalHistogramChart"></canvas>
-                    </div>
-                </div>
-
-                <!-- 4. Pruebas de Normalidad -->
-                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 lg:col-span-2">
-                    <div class="flex items-center gap-2 mb-4">
-                        <i data-lucide="activity" class="text-blue-600"></i>
-                        <h2 class="text-lg font-bold text-slate-800">4. Pruebas de Normalidad (Campana de Gauss)</h2>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <div class="bg-white p-2 border rounded">
-                            <h4 class="text-center text-sm font-bold mb-2">Exp. Funcionamiento</h4>
-                            <div style="height: 200px;"><canvas id="chartEF"></canvas></div>
-                        </div>
-                        <div class="bg-white p-2 border rounded">
-                            <h4 class="text-center text-sm font-bold mb-2">Exp. Esfuerzo</h4>
-                            <div style="height: 200px;"><canvas id="chartEE"></canvas></div>
-                        </div>
-                        <div class="bg-white p-2 border rounded">
-                            <h4 class="text-center text-sm font-bold mb-2">Cond. Facilitadoras</h4>
-                            <div style="height: 200px;"><canvas id="chartCF"></canvas></div>
-                        </div>
-                        <div class="bg-white p-2 border rounded">
-                            <h4 class="text-center text-sm font-bold mb-2">Inf. Social</h4>
-                            <div style="height: 200px;"><canvas id="chartIS"></canvas></div>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
+        <h2 class="text-xl font-semibold mb-2">Sube tu archivo de datos</h2>
+        <p class="text-sm text-gray-500 mb-6">Formato .CSV (EF01-04, EE01-04, CF01-04, IS01-03).</p>
+        <input type="file" id="fileInput" accept=".csv"
+            class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0
+                   file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer" />
+        <div id="errorMessage" class="hidden mt-4 p-3 bg-red-50 text-red-700 rounded-lg text-sm text-left flex items-center gap-2">
+            <i data-lucide="alert-circle" width="16"></i> <span id="errorText"></span>
         </div>
     </div>
 
-    <!-- LÓGICA JAVASCRIPT -->
-    <script>
-        // Inicializar Iconos
-        lucide.createIcons();
+    <!-- Dashboard -->
+    <div id="dashboard-section" class="hidden space-y-8 max-w-7xl mx-auto mt-8">
+        <div class="bg-white p-4 rounded-lg shadow-sm border flex flex-wrap justify-between items-center">
+            <div class="flex items-center gap-2 text-green-600">
+                <i data-lucide="check-circle" width="20"></i>
+                <span class="font-semibold" id="statusText">Datos procesados correctamente</span>
+            </div>
+            <div class="flex gap-4 text-sm text-slate-600">
+                <span>Registros: <strong id="totalRecords">0</strong></span>
+                <span>Alfa Total: <strong id="totalAlpha">0.000</strong></span>
+            </div>
+            <button onclick="resetApp()" class="px-4 py-1 text-sm bg-slate-100 hover:bg-slate-200 rounded">
+                Cargar nuevo archivo
+            </button>
+        </div>
 
-        // Variables Globales
-        let chartsInstance = []; // Para destruir gráficos viejos al recargar
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Descriptivos -->
+            <div class="bg-white p-6 rounded-xl shadow-sm border">
+                <div class="flex items-center gap-2 mb-4">
+                    <i data-lucide="file-text" class="text-blue-600"></i>
+                    <h2 class="text-lg font-bold">1. Estadísticos Descriptivos</h2>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left text-slate-600">
+                        <thead class="bg-slate-50 text-slate-800 font-semibold border-b">
+                        <tr>
+                            <th class="px-4 py-2">Constructo</th>
+                            <th class="px-4 py-2">Media</th>
+                            <th class="px-4 py-2">Mediana</th>
+                            <th class="px-4 py-2">Min</th>
+                            <th class="px-4 py-2">Max</th>
+                            <th class="px-4 py-2">Q1</th>
+                            <th class="px-4 py-2">Q3</th>
+                        </tr>
+                        </thead>
+                        <tbody id="statsTableBody" class="divide-y"></tbody>
+                    </table>
+                </div>
+                <div class="mt-6 bg-blue-50 p-4 rounded-lg">
+                    <h3 class="font-semibold text-blue-900 mb-2">Fiabilidad (Alfa de Cronbach)</h3>
+                    <div id="alphaContainer" class="grid grid-cols-4 gap-4 text-center"></div>
+                </div>
+            </div>
 
-        // --- FUNCIONES MATEMÁTICAS ---
-        const mean = (arr) => {
-            const valid = arr.filter(v => v !== null && !isNaN(v));
-            if (!valid.length) return 0;
-            return valid.reduce((a, b) => a + b, 0) / valid.length;
-        };
+            <!-- Boxplots -->
+            <div class="bg-white p-6 rounded-xl shadow-sm border">
+                <div class="flex items-center gap-2 mb-4">
+                    <i data-lucide="bar-chart-2" class="text-blue-600"></i>
+                    <h2 class="text-lg font-bold">2. Diagrama de Cajas (Boxplot)</h2>
+                </div>
+                <p class="text-xs text-slate-500 mb-6">Punto rojo = Media. Línea gruesa = Mediana. Caja azul = Q1-Q3.</p>
+                <div id="boxplotContainer" class="grid grid-cols-2 md:grid-cols-4 gap-6"></div>
+            </div>
 
-        const stdDev = (arr) => {
-            const valid = arr.filter(v => v !== null && !isNaN(v));
-            if (valid.length <= 1) return 0;
-            const m = mean(valid);
-            const sumSq = valid.reduce((a, b) => a + Math.pow(b - m, 2), 0);
-            return Math.sqrt(sumSq / (valid.length - 1));
-        };
+            <!-- Histograma global -->
+            <div class="bg-white p-6 rounded-xl shadow-sm border lg:col-span-2">
+                <div class="flex items-center gap-2 mb-4">
+                    <i data-lucide="activity" class="text-blue-600"></i>
+                    <h2 class="text-lg font-bold">3. Pruebas de Normalidad Global</h2>
+                </div>
+                <div class="chart-container">
+                    <canvas id="globalHistogramChart"></canvas>
+                </div>
+            </div>
 
-        const getStats = (arr) => {
-            const valid = arr.filter(v => v !== null && !isNaN(v)).sort((a, b) => a - b);
-            if (!valid.length) return null;
-            
-            const q1Pos = (valid.length - 1) * 0.25;
-            const q3Pos = (valid.length - 1) * 0.75;
-            
-            const getVal = (pos) => {
-                const base = Math.floor(pos);
-                const rest = pos - base;
-                if (valid[base + 1] !== undefined) {
-                    return valid[base] + rest * (valid[base + 1] - valid[base]);
+            <!-- Histogramas individuales -->
+            <div class="bg-white p-6 rounded-xl shadow-sm border lg:col-span-2">
+                <div class="flex items-center gap-2 mb-4">
+                    <i data-lucide="activity" class="text-blue-600"></i>
+                    <h2 class="text-lg font-bold">4. Pruebas de Normalidad</h2>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="bg-white p-2 border rounded">
+                        <h4 class="text-center text-sm font-bold mb-2">Exp. Funcionamiento</h4>
+                        <div style="height:200px"><canvas id="chartEF"></canvas></div>
+                    </div>
+                    <div class="bg-white p-2 border rounded">
+                        <h4 class="text-center text-sm font-bold mb-2">Exp. Esfuerzo</h4>
+                        <div style="height:200px"><canvas id="chartEE"></canvas></div>
+                    </div>
+                    <div class="bg-white p-2 border rounded">
+                        <h4 class="text-center text-sm font-bold mb-2">Cond. Facilitadoras</h4>
+                        <div style="height:200px"><canvas id="chartCF"></canvas></div>
+                    </div>
+                    <div class="bg-white p-2 border rounded">
+                        <h4 class="text-center text-sm font-bold mb-2">Inf. Social</h4>
+                        <div style="height:200px"><canvas id="chartIS"></canvas></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+lucide.createIcons();
+let chartsInstance = [];
+
+/* Utilidades numéricas */
+function toNumber(val){
+    if(val===null||val===undefined) return NaN;
+    const s=String(val).trim().replace(',','.');
+    const n=parseFloat(s);
+    return isNaN(n)?NaN:n;
+}
+const mean = arr => {
+    const v = arr.filter(x=>!isNaN(x));
+    return v.length? v.reduce((a,b)=>a+b,0)/v.length : 0;
+};
+const variance = arr => {
+    const v=arr.filter(x=>!isNaN(x));
+    if(v.length<2) return 0;
+    const m=mean(v);
+    const ss=v.reduce((a,b)=>a+(b-m)*(b-m),0);
+    return ss/(v.length-1);
+};
+const stdDev = arr => Math.sqrt(variance(arr));
+
+function getStats(arr){
+    const v = arr.filter(x=>!isNaN(x)).sort((a,b)=>a-b);
+    if(!v.length) return {mean:0,median:0,min:0,max:0,q1:0,q3:0,n:0};
+    const pos=(p)=> {
+        const idx=(v.length-1)*p;
+        const b=Math.floor(idx);
+        const r=idx-b;
+        return v[b+1]!==undefined? v[b]+r*(v[b+1]-v[b]) : v[b];
+    };
+    return {
+        mean: mean(v),
+        median: pos(0.5),
+        min: v[0],
+        max: v[v.length-1],
+        q1: pos(0.25),
+        q3: pos(0.75),
+        n: v.length
+    };
+}
+
+/* Cronbach alfa mejorado */
+function calculateCronbach(data, columns){
+    if(!data || !data.length || columns.length<2) return 0;
+    const rows = data.map(row=> columns.map(c=> toNumber(row[c])) )
+                     .filter(r=> r.every(x=>!isNaN(x)));
+    if(rows.length<2) return 0;
+    const k=columns.length;
+    // Varianzas por ítem
+    const itemVars = [];
+    for(let j=0;j<k;j++){
+        itemVars.push(variance(rows.map(r=>r[j])));
+    }
+    const sumItemVars = itemVars.reduce((a,b)=>a+b,0);
+    // Varianza total (suma de ítems)
+    const totalScores = rows.map(r=> r.reduce((s,x)=>s+x,0));
+    const totalVar = variance(totalScores);
+    if(totalVar===0) return 0;
+    let alpha = (k/(k-1)) * (1 - (sumItemVars/totalVar));
+    alpha = Math.max(0, Math.min(1, alpha));
+    return alpha;
+}
+
+/* Distribuciones */
+function normalPDF(x,mu,sigma){
+    if(sigma===0) return 0;
+    const z=(x-mu)/sigma;
+    return Math.exp(-0.5*z*z)/(sigma*Math.sqrt(2*Math.PI));
+}
+
+/* Pearson + p */
+function erf(x){
+    const a1=0.254829592,a2=-0.284496736,a3=1.421413741,a4=-1.453152027,a5=1.061405429,p=0.3275911;
+    const sign = x>=0?1:-1;
+    x=Math.abs(x);
+    const t=1/(1+p*x);
+    const y=1-((((((a5*t+a4)*t)+a3)*t+a2)*t+a1)*t)*Math.exp(-x*x);
+    return sign*y;
+}
+function normalCDF(x){ return 0.5*(1+erf(x/Math.sqrt(2))); }
+function tCDF(t,df){
+    if(df>=30) return normalCDF(t);
+    const x=t/Math.sqrt(df);
+    return 0.5+0.5*Math.sign(t)*Math.sqrt(1-Math.exp(-2*x*x/Math.PI));
+}
+function pearsonCorrelation(x,y){
+    if(x.length!==y.length||x.length<3) return {r:0,pValue:1};
+    const a=x.filter(v=>!isNaN(v)), b=y.filter(v=>!isNaN(v));
+    if(a.length!==b.length||a.length<3) return {r:0,pValue:1};
+    const n=a.length;
+    const sx=a.reduce((s,v)=>s+v,0), sy=b.reduce((s,v)=>s+v,0);
+    const sxy=a.reduce((s,v,i)=>s+v*b[i],0);
+    const sx2=a.reduce((s,v)=>s+v*v,0);
+    const sy2=b.reduce((s,v)=>s+v*v,0);
+    const num=n*sxy - sx*sy;
+    const den=Math.sqrt( (n*sx2 - sx*sx) * (n*sy2 - sy*sy) );
+    if(den===0) return {r:0,pValue:1};
+    const r=num/den;
+    if(Math.abs(r)===1) return {r:r,pValue:0}; // degenerado
+    const t=Math.abs(r)*Math.sqrt((n-2)/(1-r*r));
+    const p=2*(1 - tCDF(t,n-2));
+    return {r:r,pValue:p};
+}
+
+/* Regresión simple */
+function linearRegression(x,y){
+    if(x.length!==y.length||x.length<3) return null;
+    const X=x.filter(v=>!isNaN(v)); const Y=y.filter(v=>!isNaN(v));
+    if(X.length!==Y.length||X.length<3) return null;
+    const n=X.length;
+    const sx=X.reduce((a,b)=>a+b,0), sy=Y.reduce((a,b)=>a+b,0);
+    const sxy=X.reduce((a,b,i)=>a+b*Y[i],0);
+    const sx2=X.reduce((a,b)=>a+b*b,0);
+    const slope = (n*sxy - sx*sy)/(n*sx2 - sx*sx);
+    const intercept = (sy - slope*sx)/n;
+    const yMean = sy/n;
+    const ssTot = Y.reduce((a,b)=>a+(b-yMean)*(b-yMean),0);
+    const ssRes = Y.reduce((a,b,i)=> {
+        const p = slope*X[i] + intercept;
+        return a + (b-p)*(b-p);
+    },0);
+    const r2 = ssTot===0?0: 1 - ssRes/ssTot;
+    if(n<3 || ssRes===0) {
+        return {slope,intercept,r2:r2,pValue:0,tStat:Infinity,n};
+    }
+    const mse = ssRes/(n-2);
+    const seSlope = Math.sqrt(mse/(sx2 - (sx*sx)/n));
+    if(seSlope===0) return {slope,intercept,r2,pValue:0,tStat:Infinity,n};
+    const tStat = slope/seSlope;
+    const pValue = 2*(1 - tCDF(Math.abs(tStat), n-2));
+    return {slope,intercept,r2,pValue,tStat,n};
+}
+
+/* ANOVA 1 factor (sobre promedios constructos) */
+function betaCDF(x,a,b){
+    if(x<=0) return 0;
+    if(x>=1) return 1;
+    if(a===0.5 && b===0.5) return (2/Math.PI)*Math.asin(Math.sqrt(x));
+    if(a===1) return 1-Math.pow(1-x,b);
+    if(b===1) return Math.pow(x,a);
+    return x; // simplificado
+}
+function fCDF(f,df1,df2){
+    if(f<=0) return 0;
+    if(f>=50) return 1;
+    const x=(df1*f)/(df1*f+df2);
+    return betaCDF(x,df1/2,df2/2);
+}
+function oneWayANOVA(groups){
+    const all=groups.flat().filter(v=>!isNaN(v));
+    const nTotal=all.length;
+    const k=groups.length;
+    if(k<2||nTotal<k+1) return null;
+    const grandMean=mean(all);
+    let ssb=0, ssw=0;
+    groups.forEach(g=>{
+        const gv=g.filter(v=>!isNaN(v));
+        if(!gv.length) return;
+        const gm=mean(gv);
+        ssb += gv.length * (gm-grandMean)*(gm-grandMean);
+        gv.forEach(v=> ssw += (v-gm)*(v-gm) );
+    });
+    const dfB=k-1;
+    const dfW=nTotal-k;
+    if(dfW<=0) return null;
+    const msb= ssb/dfB;
+    const msw= ssw/dfW;
+    const fStat = msw===0?0: msb/msw;
+    const pValue = 1 - fCDF(fStat, dfB, dfW);
+    return {fStat,pValue,dfBetween:dfB,dfWithin:dfW,msb,msw};
+}
+
+/* Archivo */
+document.getElementById('fileInput').addEventListener('change', handleFileUpload);
+
+function detectDelimiter(line){
+    const candidates=[',',';','\t','|'];
+    let best=',', max=0;
+    candidates.forEach(d=>{
+        const c=(line.match(new RegExp('\\'+d,'g'))||[]).length;
+        if(c>max){max=c; best=d;}
+    });
+    return best;
+}
+
+// Reemplaza handleFileUpload completo
+function handleFileUpload(e){
+    const file=e.target.files[0];
+    if(!file) return;
+    if(!file.name.toLowerCase().endsWith('.csv')){
+        showError('Archivo no es CSV');
+        return;
+    }
+    if(file.size>5*1024*1024){
+        showError('Archivo > 5MB');
+        return;
+    }
+    const reader=new FileReader();
+    reader.onload = evt => {
+        try{
+            let text = evt.target.result;
+            if(!text || !text.trim()) throw new Error('Archivo vacío');
+            // Elimina BOM
+            text = text.replace(/^\uFEFF/,'');
+            const lines = text.replace(/\r/g,'').split(/\n+/).filter(l=>l.trim()!=='');
+            if(lines.length<2) throw new Error('Sin filas de datos');
+            const delimiter = detectDelimiter(lines[0]);
+            const headers = lines[0].split(delimiter).map(h=>h.trim());
+            if(headers.length===1){
+                throw new Error('No se pudo separar columnas. Verifique el delimitador.');
+            }
+            const raw=[];
+            for(let i=1;i<lines.length;i++){
+                const cols = lines[i].split(delimiter);
+                if(cols.length!==headers.length) {
+                    // Aceptar líneas cortas, rellenar
+                    while(cols.length < headers.length) cols.push('');
                 }
-                return valid[base];
-            };
+                const row={};
+                headers.forEach((h,idx)=>{
+                    const v = cols[idx]!==undefined? cols[idx].trim(): '';
+                    const num = toNumber(v);
+                    row[h] = isNaN(num)? v : num;
+                });
+                raw.push(row);
+            }
+            processData(raw, headers);
+        }catch(err){
+            console.error(err);
+            showError(err.message||'Error procesando archivo');
+        }
+    };
+    reader.onerror = ()=> showError('Error leyendo archivo');
+    reader.readAsText(file);
+}
 
-            return {
-                mean: mean(valid),
-                median: getVal((valid.length - 1) * 0.5),
-                min: valid[0],
-                max: valid[valid.length - 1],
-                q1: getVal(q1Pos),
-                q3: getVal(q3Pos),
-                n: valid.length
-            };
-        };
+/* Procesamiento */
+function processData(rawData, headers){
+    const pick = prefix => headers
+        .filter(h=> new RegExp('^'+prefix+'0?\\d{1,2}$','i').test(h))
+        .sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
 
-        const variance = (arr) => {
-            const valid = arr.filter(v => v !== null && !isNaN(v));
-            if (valid.length <= 1) return 0;
-            const m = mean(valid);
-            const sumSq = valid.reduce((a, b) => a + Math.pow(b - m, 2), 0);
-            return sumSq / (valid.length - 1); // Varianza muestral
-        };
+    const efCols = pick('EF');
+    const eeCols = pick('EE');
+    const cfCols = pick('CF');
+    const isCols = pick('IS');
 
-        const calculateCronbach = (data, columns) => {
-            if (!data || !data.length || columns.length < 2) return 0;
-            
-            // Filtrar filas con datos válidos para todas las columnas
-            const validRows = data.filter(row => 
-                columns.every(col => row[col] !== null && !isNaN(row[col]))
+    if(!efCols.length || !eeCols.length || !cfCols.length || !isCols.length){
+        showError(
+            'Faltan columnas requeridas.\nEncontradas ('+headers.length+'):\n' +
+            headers.join(', ') + '\n' +
+            'Detectadas -> EF:'+efCols.length+' EE:'+eeCols.length+' CF:'+cfCols.length+' IS:'+isCols.length + '\n' +
+            'Formato esperado: EF01,EE01,CF01,IS01 etc.'
+        );
+        return;
+    }
+
+    const map = {EF: efCols, EE: eeCols, CF: cfCols, IS: isCols};
+
+    // Limpiar filas y convertir numéricos
+    const cleaned = rawData.map(r=>{
+        const nr={};
+        headers.forEach(h=> nr[h]= toNumber(r[h]) );
+        return nr;
+    });
+
+    // Filas válidas: al menos 1 valor por constructo
+    const validRows = cleaned.filter(r =>
+        Object.values(map).every(cols => cols.some(c=>!isNaN(r[c])))
+    );
+    if(!validRows.length){
+        showError('No hay filas válidas tras limpieza');
+        return;
+    }
+
+    // Promedios constructos
+    const processed = validRows.map(r=>{
+        const o={};
+        Object.entries(map).forEach(([k,cols])=>{
+            const vals = cols.map(c=>r[c]).filter(x=>!isNaN(x));
+            o[k]= vals.length? mean(vals) : null;
+        });
+        return o;
+    }).filter(o=> Object.values(o).every(v=> v!==null));
+
+    if(!processed.length){
+        showError('No se pudieron calcular constructos');
+        return;
+    }
+
+    // Estadísticos
+    const stats = {
+        EF: getStats(processed.map(r=>r.EF)),
+        EE: getStats(processed.map(r=>r.EE)),
+        CF: getStats(processed.map(r=>r.CF)),
+        IS: getStats(processed.map(r=>r.IS))
+    };
+
+    // Cronbach
+    const alphas = {
+        EF: calculateCronbach(validRows, map.EF),
+        EE: calculateCronbach(validRows, map.EE),
+        CF: calculateCronbach(validRows, map.CF),
+        IS: calculateCronbach(validRows, map.IS),
+        Total: calculateCronbach(validRows, [...map.EF,...map.EE,...map.CF,...map.IS])
+    };
+
+    // Inferencial
+    const constructsKeys = ['EF','EE','CF','IS'];
+    const correlations = {};
+    for(let i=0;i<constructsKeys.length;i++){
+        for(let j=i+1;j<constructsKeys.length;j++){
+            const a=constructsKeys[i], b=constructsKeys[j];
+            correlations[`${a}-${b}`]= pearsonCorrelation(
+                processed.map(r=>r[a]), processed.map(r=>r[b])
             );
-            
-            if (validRows.length === 0) return 0;
-            
-            // Suma de varianzas de cada ítem
-            let sumItemVariances = 0;
-            columns.forEach(col => {
-                const values = validRows.map(row => parseFloat(row[col]));
-                sumItemVariances += variance(values);
-            });
-            
-            // Varianza del puntaje total
-            const totalScores = validRows.map(row => {
-                return columns.reduce((sum, col) => sum + parseFloat(row[col]), 0);
-            });
-            const totalVariance = variance(totalScores);
-            
-            const k = columns.length;
-            
-            if (totalVariance === 0 || sumItemVariances === 0) return 0;
-            
-            // Fórmula correcta del Alfa de Cronbach
-            const alpha = (k / (k - 1)) * (1 - (sumItemVariances / totalVariance));
-            
-            return Math.max(0, alpha); // Asegurar que no sea negativo
-        };
-        const normalPDF = (x, mu, sigma) => {
-            if (sigma === 0) return 0;
-            const num = Math.exp(-Math.pow(x - mu, 2) / (2 * Math.pow(sigma, 2)));
-            const denom = sigma * Math.sqrt(2 * Math.PI);
-            return num / denom;
-        };
-
-        // --- MANEJO DE ARCHIVOS Y DATOS ---
-        const fileInput = document.getElementById('fileInput');
-        fileInput.addEventListener('change', handleFileUpload);
-
-        function handleFileUpload(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = (evt) => {
-                try {
-                    const text = evt.target.result;
-                    const lines = text.split('\n').filter(l => l.trim() !== '');
-                    if (lines.length < 2) throw new Error("El archivo parece estar vacío o mal formado");
-
-                    // Detectar delimitador
-                    const firstLine = lines[0];
-                    const delimiter = firstLine.includes(';') ? ';' : ',';
-                    
-                    const headers = firstLine.split(delimiter).map(h => h.trim().replace(/"/g, ''));
-                    
-                    const rawData = lines.slice(1).map(line => {
-                        const values = line.split(delimiter);
-                        const obj = {};
-                        headers.forEach((h, i) => {
-                            const val = values[i] ? values[i].replace(/"/g, '').replace(',', '.') : null;
-                            obj[h] = val ? parseFloat(val) : null;
-                        });
-                        return obj;
-                    });
-
-                    processData(rawData, headers);
-                } catch (err) {
-                    showError(err.message || "Error al leer el archivo CSV.");
-                }
-            };
-            reader.readAsText(file);
         }
+    }
+    const regressions = {};
+    ['EF','EE','CF'].forEach(pred=>{
+        regressions[pred]= linearRegression(processed.map(r=>r[pred]), processed.map(r=>r.IS));
+    });
+    const anovaResult = oneWayANOVA(constructsKeys.map(c=> processed.map(r=>r[c])));
 
-        function processData(rawData, headers) {
-            const map = {
-                EF: ['EF01', 'EF02', 'EF03', 'EF04'],
-                EE: ['EE01', 'EE02', 'EE03', 'EE04'],
-                CF: ['CF01', 'CF02', 'CF03', 'CF04'],
-                IS: ['IS01', 'IS02', 'IS03']
-            };
+    // Límites globales
+    const allMins=[stats.EF.min,stats.EE.min,stats.CF.min,stats.IS.min];
+    const allMaxs=[stats.EF.max,stats.EE.max,stats.CF.max,stats.IS.max];
+    const limits={min:Math.floor(Math.min(...allMins)),max:Math.ceil(Math.max(...allMaxs))};
 
-            // Validar
-            const missing = [];
-            Object.values(map).flat().forEach(col => {
-                if (!headers.includes(col)) missing.push(col);
-            });
-            if (missing.length > 0) {
-                showError(`Faltan columnas: ${missing.join(', ')}`);
-                return;
-            }
+    // Degenerado (todos vectores iguales)
+    const degenerate = constructsKeys
+        .map(c=> JSON.stringify(processed.map(r=>r[c])))
+        .every((v,i,arr)=> v===arr[0]);
 
-            // Calcular Constructos
-            const processed = rawData.map(row => ({
-                EF: mean(map.EF.map(c => row[c])),
-                EE: mean(map.EE.map(c => row[c])),
-                CF: mean(map.CF.map(c => row[c])),
-                IS: mean(map.IS.map(c => row[c]))
-            }));
+    renderUI(stats, alphas, processed, limits, {correlations, regressions, anova: anovaResult, degenerate});
+}
 
-            const stats = {
-                EF: getStats(processed.map(r => r.EF)),
-                EE: getStats(processed.map(r => r.EE)),
-                CF: getStats(processed.map(r => r.CF)),
-                IS: getStats(processed.map(r => r.IS))
-            };
+/* Render UI */
+function renderUI(stats, alphas, constructs, limits, inferential={}){
+    document.getElementById('upload-section').classList.add('hidden');
+    document.getElementById('dashboard-section').classList.remove('hidden');
+    document.getElementById('errorMessage').classList.add('hidden');
+    document.getElementById('totalRecords').innerText = stats.EF.n;
+    document.getElementById('totalAlpha').innerText = alphas.Total.toFixed(3);
 
-            const alphas = {
-                EF: calculateCronbach(rawData, map.EF),
-                EE: calculateCronbach(rawData, map.EE),
-                CF: calculateCronbach(rawData, map.CF),
-                IS: calculateCronbach(rawData, map.IS),
-                Total: calculateCronbach(rawData, [...map.EF, ...map.EE, ...map.CF, ...map.IS])
-            };
+    // Tabla descriptivos
+    const tbody=document.getElementById('statsTableBody');
+    tbody.innerHTML='';
+    Object.entries(stats).forEach(([k,v])=>{
+        tbody.innerHTML += `<tr class="hover:bg-slate-50">
+            <td class="px-4 py-2 font-medium">${k}</td>
+            <td class="px-4 py-2">${v.mean.toFixed(2)}</td>
+            <td class="px-4 py-2">${v.median.toFixed(2)}</td>
+            <td class="px-4 py-2">${v.min}</td>
+            <td class="px-4 py-2">${v.max}</td>
+            <td class="px-4 py-2">${v.q1.toFixed(2)}</td>
+            <td class="px-4 py-2">${v.q3.toFixed(2)}</td>
+        </tr>`;
+    });
 
-            // Calcular límites globales para gráficos
-            const allMins = [stats.EF.min, stats.EE.min, stats.CF.min, stats.IS.min];
-            const allMaxs = [stats.EF.max, stats.EE.max, stats.CF.max, stats.IS.max];
-            const globalLimits = {
-                min: Math.floor(Math.min(...allMins)),
-                max: Math.ceil(Math.max(...allMaxs))
-            };
+    // Alfas
+    const alphaContainer=document.getElementById('alphaContainer');
+    alphaContainer.innerHTML='';
+    Object.entries(alphas).forEach(([k,v])=>{
+        if(k==='Total') return;
+        const rel = v>=0.9?'🟢 Excelente': v>=0.8?'🟡 Buena': v>=0.7?'🟠 Aceptable':'🔴 Pobre';
+        alphaContainer.innerHTML += `<div>
+            <div class="text-xs uppercase text-blue-500">${k}</div>
+            <div class="font-bold text-blue-800">${v.toFixed(3)}</div>
+            <div class="text-xs mt-1">${rel}</div>
+        </div>`;
+    });
 
-            renderUI(stats, alphas, processed, globalLimits);
+    // Inferencial
+    alphaContainer.parentElement.insertAdjacentHTML('afterend', `
+    <div class="mt-6 bg-green-50 p-4 rounded-lg">
+        <h3 class="font-semibold text-green-900 mb-4">📊 Análisis Inferencial</h3>
+        ${inferential.degenerate?'<div class="text-xs text-red-600 mb-3">Advertencia: Constructos degenerados (correlaciones perfectas). Revise columnas.</div>':''}
+        <div class="mb-4">
+            <h4 class="font-medium text-green-800 mb-2">Matriz de Correlaciones (r, p)</h4>
+            <div class="grid grid-cols-3 gap-2 text-xs">
+                ${Object.entries(inferential.correlations||{}).map(([pair,res])=>`
+                    <div class="bg-white p-2 rounded border">
+                        <strong>${pair}:</strong><br>
+                        r = ${res.r.toFixed(3)}<br>
+                        p = ${res.pValue.toFixed(3)}${res.pValue<0.05?' <span class="text-green-600">*</span>':''}
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+        <div class="mb-4">
+            <h4 class="font-medium text-green-800 mb-2">Regresiones (→ IS)</h4>
+            <div class="grid grid-cols-3 gap-2 text-xs">
+                ${Object.entries(inferential.regressions||{}).map(([pred,r])=> r?`
+                    <div class="bg-white p-2 rounded border">
+                        <strong>${pred} → IS</strong><br>
+                        R²=${r.r2.toFixed(3)}<br>β=${r.slope.toFixed(3)}<br>
+                        p=${r.pValue.toFixed(3)}${r.pValue<0.05?' <span class="text-green-600">*</span>':''}
+                    </div>`:'').join('')}
+            </div>
+        </div>
+        ${inferential.anova?`
+        <div class="mb-2">
+            <h4 class="font-medium text-green-800 mb-2">ANOVA Constructos</h4>
+            <div class="bg-white p-3 rounded border text-xs">
+                F=${inferential.anova.fStat.toFixed(3)}<br>
+                p=${inferential.anova.pValue.toFixed(3)}${inferential.anova.pValue<0.05?'<span class="text-green-600"> * Significativo</span>':' <span class="text-gray-500">No significativo</span>'}<br>
+                gl=${inferential.anova.dfBetween}, ${inferential.anova.dfWithin}
+            </div>
+        </div>`:''}
+        <div class="mt-3 text-xs text-green-700"><strong>* p &lt; 0.05 significativo</strong></div>
+    </div>`);
+
+    // Boxplots
+    const boxContainer=document.getElementById('boxplotContainer');
+    boxContainer.innerHTML='';
+    const labels={EF:'Exp. Func',EE:'Exp. Esf',CF:'Cond. Fac',IS:'Inf. Soc'};
+    Object.entries(stats).forEach(([k,v])=>{
+        boxContainer.innerHTML += createBoxPlotSVG(v, labels[k], limits.min, limits.max);
+    });
+
+    // Gráficos
+    chartsInstance.forEach(c=> c && c.destroy());
+    chartsInstance=[];
+    const allValues = constructs.flatMap(o=>[o.EF,o.EE,o.CF,o.IS]).filter(v=>!isNaN(v));
+    createHistogram(allValues,'globalHistogramChart','Global',limits);
+    createHistogram(constructs.map(r=>r.EF),'chartEF','EF',limits);
+    createHistogram(constructs.map(r=>r.EE),'chartEE','EE',limits);
+    createHistogram(constructs.map(r=>r.CF),'chartCF','CF',limits);
+    createHistogram(constructs.map(r=>r.IS),'chartIS','IS',limits);
+}
+
+function createBoxPlotSVG(data,label,globalMin,globalMax){
+    const height=300,width=150,padding=30,plotHeight=height-padding*2;
+    const y=(val)=> height - padding - ((val-globalMin)/(globalMax-globalMin))*plotHeight;
+    let ticks='';
+    for(let i=globalMin;i<=globalMax;i++){
+        const yy=y(i);
+        ticks += `<g><line x1="35" x2="40" y1="${yy}" y2="${yy}" stroke="#ccc"/>
+                  <text x="30" y="${yy+4}" text-anchor="end" font-size="10" fill="#666">${i}</text></g>`;
+    }
+    const q1Y=y(data.q1), q3Y=y(data.q3), medY=y(data.median), minY=y(data.min), maxY=y(data.max), meanY=y(data.mean);
+    const rectH=Math.max(Math.abs(q1Y-q3Y),2);
+    return `<div class="flex flex-col items-center">
+        <svg width="${width}" height="${height}" class="bg-white border rounded shadow-sm">
+            <line x1="40" x2="40" y1="${padding}" y2="${height-padding}" stroke="#ccc"/>
+            ${ticks}
+            <line x1="${width/2}" x2="${width/2}" y1="${minY}" y2="${maxY}" stroke="#666" stroke-width="2" stroke-dasharray="4 4"/>
+            <rect x="${width/2-20}" y="${q3Y}" width="40" height="${rectH}" fill="#bfdbfe" stroke="#2563eb" stroke-width="2"/>
+            <line x1="${width/2-20}" x2="${width/2+20}" y1="${medY}" y2="${medY}" stroke="#1e40af" stroke-width="3"/>
+            <line x1="${width/2-10}" x2="${width/2+10}" y1="${minY}" y2="${minY}" stroke="#666" stroke-width="2"/>
+            <line x1="${width/2-10}" x2="${width/2+10}" y1="${maxY}" y2="${maxY}" stroke="#666" stroke-width="2"/>
+            <circle cx="${width/2}" cy="${meanY}" r="4" fill="red" stroke="white"/>
+        </svg>
+        <span class="mt-2 font-bold text-gray-700 text-sm">${label}</span>
+        <span class="text-xs text-gray-500">Media: ${data.mean.toFixed(2)}</span>
+    </div>`;
+}
+
+function createHistogram(dataArr,canvasId,label,limits){
+    const ctx=document.getElementById(canvasId).getContext('2d');
+    const m=mean(dataArr), s=stdDev(dataArr);
+    const bins=12, min=limits.min, max=limits.max, step=(max-min)/bins;
+    const labels=[], counts=[], normalData=[];
+    for(let i=0;i<bins;i++){
+        const start=min+i*step, end=start+step, mid=(start+end)/2;
+        const count=dataArr.filter(v=>v>=start && v<end).length;
+        const norm=normalPDF(mid,m,s)*dataArr.length*step;
+        labels.push(mid.toFixed(1));
+        counts.push(count);
+        normalData.push(norm);
+    }
+    const chart=new Chart(ctx,{
+        type:'bar',
+        data:{
+            labels,
+            datasets:[
+            {
+                label:'Curva Normal',
+                data:normalData,
+                type:'line',
+                borderColor:'#dc2626',
+                borderWidth:2,
+                pointRadius:0,
+                tension:0.4
+            },
+            {
+                label:'Frecuencia',
+                data:counts,
+                backgroundColor:'#93c5fd',
+                barPercentage:1.0,
+                categoryPercentage:1.0
+            }]
+        },
+        options:{
+            responsive:true,
+            maintainAspectRatio:false,
+            plugins:{legend:{display:false}},
+            scales:{y:{beginAtZero:true}}
         }
+    });
+    chartsInstance.push(chart);
+}
 
-        // --- RENDERIZADO UI ---
-        function renderUI(stats, alphas, constructs, limits) {
-            document.getElementById('upload-section').classList.add('hidden');
-            document.getElementById('dashboard-section').classList.remove('hidden');
-            document.getElementById('errorMessage').classList.add('hidden');
-            
-            // Info Header
-            document.getElementById('totalRecords').innerText = stats.EF.n;
-            document.getElementById('totalAlpha').innerText = alphas.Total.toFixed(3);
+function showError(msg){
+    const d=document.getElementById('errorMessage');
+    document.getElementById('errorText').innerText = msg;
+    d.classList.remove('hidden');
+}
 
-            // 1. Tabla
-            const tbody = document.getElementById('statsTableBody');
-            tbody.innerHTML = '';
-            Object.entries(stats).forEach(([key, val]) => {
-                const row = `<tr class="hover:bg-slate-50">
-                    <td class="px-4 py-2 font-medium">${key}</td>
-                    <td class="px-4 py-2">${val.mean.toFixed(2)}</td>
-                    <td class="px-4 py-2">${val.median.toFixed(2)}</td>
-                    <td class="px-4 py-2">${val.min}</td>
-                    <td class="px-4 py-2">${val.max}</td>
-                    <td class="px-4 py-2">${val.q1.toFixed(2)}</td>
-                    <td class="px-4 py-2">${val.q3.toFixed(2)}</td>
-                </tr>`;
-                tbody.innerHTML += row;
-            });
-
-            // Alfas
-            const alphaContainer = document.getElementById('alphaContainer');
-            alphaContainer.innerHTML = '';
-            Object.entries(alphas).forEach(([k, v]) => {
-                if(k === 'Total') return;
-                alphaContainer.innerHTML += `
-                    <div>
-                        <div class="text-xs uppercase text-blue-500">${k}</div>
-                        <div class="font-bold text-blue-800">${v.toFixed(3)}</div>
-                    </div>`;
-            });
-
-            // 2. Boxplots SVG
-            const boxContainer = document.getElementById('boxplotContainer');
-            boxContainer.innerHTML = '';
-            const labels = { EF: "Exp. Func", EE: "Exp. Esf", CF: "Cond. Fac", IS: "Inf. Soc" };
-            Object.entries(stats).forEach(([key, val]) => {
-                boxContainer.innerHTML += createBoxPlotSVG(val, labels[key], limits.min, limits.max);
-            });
-
-            // 3. Gráficos (Chart.js)
-            // Limpiar anteriores
-            chartsInstance.forEach(chart => chart.destroy());
-            chartsInstance = [];
-
-            // Datos Globales
-            const allValues = constructs.flatMap(c => [c.EF, c.EE, c.CF, c.IS]).filter(v => v !== null);
-            createHistogram(allValues, 'globalHistogramChart', 'Histograma Global', limits);
-
-            // Datos Individuales
-            createHistogram(constructs.map(c => c.EF), 'chartEF', 'EF', limits);
-            createHistogram(constructs.map(c => c.EE), 'chartEE', 'EE', limits);
-            createHistogram(constructs.map(c => c.CF), 'chartCF', 'CF', limits);
-            createHistogram(constructs.map(c => c.IS), 'chartIS', 'IS', limits);
-        }
-
-        function createBoxPlotSVG(data, label, globalMin, globalMax) {
-            const height = 300;
-            const width = 150;
-            const padding = 30;
-            const plotHeight = height - padding * 2;
-            
-            // Escala
-            const yScale = (val) => height - padding - ((val - globalMin) / (globalMax - globalMin)) * plotHeight;
-            
-            // Ticks
-            let ticksSVG = '';
-            for(let i = globalMin; i <= globalMax; i++) {
-                const y = yScale(i);
-                ticksSVG += `<g><line x1="35" x2="40" y1="${y}" y2="${y}" stroke="#ccc" /><text x="30" y="${y+4}" text-anchor="end" font-size="10" fill="#666">${i}</text></g>`;
-            }
-
-            const q1Y = yScale(data.q1);
-            const q3Y = yScale(data.q3);
-            const medY = yScale(data.median);
-            const minY = yScale(data.min);
-            const maxY = yScale(data.max);
-            const meanY = yScale(data.mean);
-            const rectHeight = Math.max(Math.abs(q1Y - q3Y), 2);
-
-            return `
-            <div class="flex flex-col items-center">
-                <svg width="${width}" height="${height}" class="bg-white border rounded shadow-sm">
-                    <line x1="40" x2="40" y1="${padding}" y2="${height-padding}" stroke="#ccc" />
-                    ${ticksSVG}
-                    <!-- Boxplot lines -->
-                    <line x1="${width/2}" x2="${width/2}" y1="${minY}" y2="${maxY}" stroke="#666" stroke-width="2" stroke-dasharray="4 4" />
-                    <rect x="${width/2 - 20}" y="${q3Y}" width="40" height="${rectHeight}" fill="#bfdbfe" stroke="#2563eb" stroke-width="2" />
-                    <line x1="${width/2 - 20}" x2="${width/2 + 20}" y1="${medY}" y2="${medY}" stroke="#1e40af" stroke-width="3" />
-                    <line x1="${width/2 - 10}" x2="${width/2 + 10}" y1="${minY}" y2="${minY}" stroke="#666" stroke-width="2" />
-                    <line x1="${width/2 - 10}" x2="${width/2 + 10}" y1="${maxY}" y2="${maxY}" stroke="#666" stroke-width="2" />
-                    <circle cx="${width/2}" cy="${meanY}" r="4" fill="red" stroke="white" />
-                </svg>
-                <span class="mt-2 font-bold text-gray-700 text-sm">${label}</span>
-                <span class="text-xs text-gray-500">Media: ${data.mean.toFixed(2)}</span>
-            </div>`;
-        }
-
-        function createHistogram(dataArr, canvasId, label, limits) {
-            const ctx = document.getElementById(canvasId).getContext('2d');
-            const m = mean(dataArr);
-            const s = stdDev(dataArr);
-            const bins = 12;
-            const min = limits.min;
-            const max = limits.max;
-            const step = (max - min) / bins;
-
-            const labels = [];
-            const counts = [];
-            const normalData = [];
-
-            for(let i=0; i<bins; i++) {
-                const rangeStart = min + i * step;
-                const rangeEnd = rangeStart + step;
-                const mid = (rangeStart + rangeEnd) / 2;
-                
-                const count = dataArr.filter(v => v >= rangeStart && v < rangeEnd).length;
-                // Curva normal escalada
-                const normalVal = normalPDF(mid, m, s) * dataArr.length * step;
-                
-                labels.push(mid.toFixed(1));
-                counts.push(count);
-                normalData.push(normalVal);
-            }
-
-            const chart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [
-                        {
-                            label: 'Curva Normal',
-                            data: normalData,
-                            type: 'line',
-                            borderColor: '#dc2626',
-                            borderWidth: 2,
-                            pointRadius: 0,
-                            tension: 0.4
-                        },
-                        {
-                            label: 'Frecuencia',
-                            data: counts,
-                            backgroundColor: '#93c5fd',
-                            barPercentage: 1.0,
-                            categoryPercentage: 1.0
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        y: { beginAtZero: true }
-                    }
-                }
-            });
-            chartsInstance.push(chart);
-        }
-
-        function showError(msg) {
-            const errDiv = document.getElementById('errorMessage');
-            document.getElementById('errorText').innerText = msg;
-            errDiv.classList.remove('hidden');
-        }
-
-        function resetApp() {
-            document.getElementById('upload-section').classList.remove('hidden');
-            document.getElementById('dashboard-section').classList.add('hidden');
-            document.getElementById('fileInput').value = '';
-            chartsInstance.forEach(c => c.destroy());
-            chartsInstance = [];
-        }
-    </script>
+function resetApp(){
+    document.getElementById('upload-section').classList.remove('hidden');
+    document.getElementById('dashboard-section').classList.add('hidden');
+    document.getElementById('fileInput').value='';
+    chartsInstance.forEach(c=> c && c.destroy());
+    chartsInstance=[];
+}
+</script>
 </body>
 </html>
