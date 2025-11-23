@@ -202,23 +202,46 @@
             };
         };
 
-        const calculateCronbach = (data, columns) => {
-            if (!data || !data.length) return 0;
-            let sumItemVariances = 0;
-            columns.forEach(col => {
-                const values = data.map(row => parseFloat(row[col]));
-                const variance = Math.pow(stdDev(values), 2);
-                sumItemVariances += variance;
-            });
-            const totalScores = data.map(row => {
-                return columns.reduce((sum, col) => sum + (parseFloat(row[col]) || 0), 0);
-            });
-            const totalVariance = Math.pow(stdDev(totalScores), 2);
-            const k = columns.length;
-            if (totalVariance === 0) return 0;
-            return (k / (k - 1)) * (1 - (sumItemVariances / totalVariance));
+        const variance = (arr) => {
+            const valid = arr.filter(v => v !== null && !isNaN(v));
+            if (valid.length <= 1) return 0;
+            const m = mean(valid);
+            const sumSq = valid.reduce((a, b) => a + Math.pow(b - m, 2), 0);
+            return sumSq / (valid.length - 1); // Varianza muestral
         };
 
+        const calculateCronbach = (data, columns) => {
+            if (!data || !data.length || columns.length < 2) return 0;
+            
+            // Filtrar filas con datos válidos para todas las columnas
+            const validRows = data.filter(row => 
+                columns.every(col => row[col] !== null && !isNaN(row[col]))
+            );
+            
+            if (validRows.length === 0) return 0;
+            
+            // Suma de varianzas de cada ítem
+            let sumItemVariances = 0;
+            columns.forEach(col => {
+                const values = validRows.map(row => parseFloat(row[col]));
+                sumItemVariances += variance(values);
+            });
+            
+            // Varianza del puntaje total
+            const totalScores = validRows.map(row => {
+                return columns.reduce((sum, col) => sum + parseFloat(row[col]), 0);
+            });
+            const totalVariance = variance(totalScores);
+            
+            const k = columns.length;
+            
+            if (totalVariance === 0 || sumItemVariances === 0) return 0;
+            
+            // Fórmula correcta del Alfa de Cronbach
+            const alpha = (k / (k - 1)) * (1 - (sumItemVariances / totalVariance));
+            
+            return Math.max(0, alpha); // Asegurar que no sea negativo
+        };
         const normalPDF = (x, mu, sigma) => {
             if (sigma === 0) return 0;
             const num = Math.exp(-Math.pow(x - mu, 2) / (2 * Math.pow(sigma, 2)));
