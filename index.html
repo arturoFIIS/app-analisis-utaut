@@ -88,25 +88,39 @@
                 </div>
                 <p class="text-xs text-slate-500 mb-6">Punto rojo = Media. Línea gruesa = Mediana. Caja azul = Q1-Q3.</p>
                 <div id="boxplotContainer" class="grid grid-cols-2 md:grid-cols-4 gap-6"></div>
+
+                <!-- Aceptación por ítem dentro de la misma tarjeta -->
+                <div class="mt-8">
+                    <h3 class="text-sm font-bold mb-2 flex items-center gap-2">
+                        <i data-lucide="layout-grid" class="text-blue-600"></i>
+                        Aceptación Tecnológica (UTAUT) por Ítem
+                    </h3>
+                    <div class="flex flex-wrap gap-2 text-xs font-semibold mb-4">
+                        <span class="px-2 py-1 rounded bg-yellow-300 text-yellow-900">E.Desempeño (EF)</span>
+                        <span class="px-2 py-1 rounded bg-blue-600 text-white">E.Esfuerzo (EE)</span>
+                        <span class="px-2 py-1 rounded bg-orange-300 text-orange-900">C.Facilitadoras (CF)</span>
+                        <span class="px-2 py-1 rounded bg-green-500 text-white">I.Conductual (IS)</span>
+                    </div>
+                    <div style="height:260px">
+                        <canvas id="itemsAcceptanceChart"></canvas>
+                    </div>
+                </div>
             </div>
 
-            <!-- Histograma global -->
             <div class="bg-white p-6 rounded-xl shadow-sm border lg:col-span-2">
                 <div class="flex items-center gap-2 mb-4">
                     <i data-lucide="activity" class="text-blue-600"></i>
-                    <h2 class="text-lg font-bold">3. Pruebas de Normalidad Global</h2>
+                    <h2 class="text-lg font-bold">3. Pruebas de Normalidad</h2>
                 </div>
-                <div class="chart-container">
+
+                <!-- Global -->
+                <h3 class="text-sm font-bold mb-2">Global</h3>
+                <div class="chart-container mb-8">
                     <canvas id="globalHistogramChart"></canvas>
                 </div>
-            </div>
 
-            <!-- Histogramas individuales -->
-            <div class="bg-white p-6 rounded-xl shadow-sm border lg:col-span-2">
-                <div class="flex items-center gap-2 mb-4">
-                    <i data-lucide="activity" class="text-blue-600"></i>
-                    <h2 class="text-lg font-bold">4. Pruebas de Normalidad</h2>
-                </div>
+                <!-- Individuales -->
+                <h3 class="text-sm font-bold mb-4">Por Constructo</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div class="bg-white p-2 border rounded">
                         <h4 class="text-center text-sm font-bold mb-2">Exp. Funcionamiento</h4>
@@ -202,7 +216,15 @@ function normalPDF(x,mu,sigma){
     const z=(x-mu)/sigma;
     return Math.exp(-0.5*z*z)/(sigma*Math.sqrt(2*Math.PI));
 }
-
+/* Nivel de aceptación */
+function acceptanceLevel(value, min, max){
+    const r = max - min;
+    if(!isFinite(r) || r <= 0 || !isFinite(value)) return {label:'N/A', color:'#64748b'};
+    const t = (value - min) / r; // 0..1
+    if(t < 1/3)  return {label:'Bajo',  color:'#ef4444'};
+    if(t < 2/3)  return {label:'Medio', color:'#f59e0b'};
+    return {label:'Alto',  color:'#10b981'};
+}
 /* Pearson + p */
 function erf(x){
     const a1=0.254829592,a2=-0.284496736,a3=1.421413741,a4=-1.453152027,a5=1.061405429,p=0.3275911;
@@ -467,11 +489,11 @@ function processData(rawData, headers){
         .map(c=> JSON.stringify(processed.map(r=>r[c])))
         .every((v,i,arr)=> v===arr[0]);
 
-    renderUI(stats, alphas, processed, limits, {correlations, regressions, anova: anovaResult, degenerate});
+    renderUI(stats, alphas, processed, limits, {correlations, regressions, anova: anovaResult, degenerate}, map, validRows);
 }
 
 /* Render UI */
-function renderUI(stats, alphas, constructs, limits, inferential={}){
+function renderUI(stats, alphas, constructs, limits, inferential={}, map={}, rawRows=[]){
     document.getElementById('upload-section').classList.add('hidden');
     document.getElementById('dashboard-section').classList.remove('hidden');
     document.getElementById('errorMessage').classList.add('hidden');
@@ -558,11 +580,13 @@ function renderUI(stats, alphas, constructs, limits, inferential={}){
     chartsInstance.forEach(c=> c && c.destroy());
     chartsInstance=[];
     const allValues = constructs.flatMap(o=>[o.EF,o.EE,o.CF,o.IS]).filter(v=>!isNaN(v));
-    createHistogram(allValues,'globalHistogramChart','Global',limits);
-    createHistogram(constructs.map(r=>r.EF),'chartEF','EF',limits);
-    createHistogram(constructs.map(r=>r.EE),'chartEE','EE',limits);
-    createHistogram(constructs.map(r=>r.CF),'chartCF','CF',limits);
-    createHistogram(constructs.map(r=>r.IS),'chartIS','IS',limits);
+    createHistogram(allValues,'globalHistogramChart','Global',limits,'Frecuencia','Puntaje');
+    createHistogram(constructs.map(r=>r.EF),'chartEF','EF',limits,'Frecuencia','Puntaje');
+    createHistogram(constructs.map(r=>r.EE),'chartEE','EE',limits,'Frecuencia','Puntaje');
+    createHistogram(constructs.map(r=>r.CF),'chartCF','CF',limits,'Frecuencia','Puntaje');
+    createHistogram(constructs.map(r=>r.IS),'chartIS','IS',limits,'Frecuencia','Puntaje');
+    
+    createItemsAcceptanceChart(map, rawRows, limits);
 }
 
 function createBoxPlotSVG(data,label,globalMin,globalMax){
@@ -576,6 +600,7 @@ function createBoxPlotSVG(data,label,globalMin,globalMax){
     }
     const q1Y=y(data.q1), q3Y=y(data.q3), medY=y(data.median), minY=y(data.min), maxY=y(data.max), meanY=y(data.mean);
     const rectH=Math.max(Math.abs(q1Y-q3Y),2);
+    const acc = acceptanceLevel(data.mean, globalMin, globalMax);
     return `<div class="flex flex-col items-center">
         <svg width="${width}" height="${height}" class="bg-white border rounded shadow-sm">
             <line x1="40" x2="40" y1="${padding}" y2="${height-padding}" stroke="#ccc"/>
@@ -589,10 +614,52 @@ function createBoxPlotSVG(data,label,globalMin,globalMax){
         </svg>
         <span class="mt-2 font-bold text-gray-700 text-sm">${label}</span>
         <span class="text-xs text-gray-500">Media: ${data.mean.toFixed(2)}</span>
+        <span class="text-xs mt-1 flex items-center gap-2">
+            <span style="display:inline-block;width:8px;height:8px;border-radius:9999px;background:${acc.color}"></span>
+            Nivel de aceptación: <strong style="color:${acc.color}">${acc.label}</strong>
+        </span>
     </div>`;
 }
-
-function createHistogram(dataArr,canvasId,label,limits){
+function createItemsAcceptanceChart(map, rows, limits){
+    const ctx=document.getElementById('itemsAcceptanceChart');
+    if(!ctx) return;
+    const constructColors={EF:'#facc15',EE:'#2563eb',CF:'#f97316',IS:'#16a34a'};
+    const items=[];
+    Object.entries(map).forEach(([prefix, cols])=>{
+        cols.forEach(col=>{
+            const vals=rows.map(r=> toNumber(r[col])).filter(v=>!isNaN(v));
+            const m=vals.length?mean(vals):0;
+            items.push({prefix, col, mean:m});
+        });
+    });
+    const labels=items.map((_,i)=>String(i+1)); // 1..15
+    const dataVals=items.map(it=>it.mean);
+    const colors=items.map(it=>constructColors[it.prefix]);
+    const chart=new Chart(ctx.getContext('2d'),{
+        type:'bar',
+        data:{labels,datasets:[{data:dataVals,backgroundColor:colors}]},
+        options:{
+            responsive:true,
+            maintainAspectRatio:false,
+            plugins:{
+                legend:{display:false},
+                title:{display:true,text:'Aceptación tecnológica (UTAUT)'}
+            },
+            scales:{
+                y:{
+                    min:limits.min,
+                    max:limits.max,
+                    title:{display:true,text:'Puntaje'}
+                },
+                x:{
+                    title:{display:true,text:'Ítems (orden consecutivo)'}
+                }
+            }
+        }
+    });
+    chartsInstance.push(chart);
+}
+function createHistogram(dataArr,canvasId,label,limits,yTitle,xTitle){
     const ctx=document.getElementById(canvasId).getContext('2d');
     const m=mean(dataArr), s=stdDev(dataArr);
     const bins=12, min=limits.min, max=limits.max, step=(max-min)/bins;
@@ -631,7 +698,25 @@ function createHistogram(dataArr,canvasId,label,limits){
             responsive:true,
             maintainAspectRatio:false,
             plugins:{legend:{display:false}},
-            scales:{y:{beginAtZero:true}}
+            scales:{
+                x:{
+                    title:{
+                        display: !!xTitle,
+                        text: xTitle,
+                        color:'#334155',
+                        font:{size:12,weight:'bold'}
+                    }
+                },
+                y:{
+                    beginAtZero:true,
+                    title:{
+                        display: !!yTitle,
+                        text: yTitle,
+                        color:'#334155',
+                        font:{size:12,weight:'bold'}
+                    }
+                }
+            }
         }
     });
     chartsInstance.push(chart);
